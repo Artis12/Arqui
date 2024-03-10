@@ -1,0 +1,140 @@
+global main
+
+extern printf
+extern scanf
+
+SECTION .data ; Inicializa los datos
+
+arr: times 20 dd 0 ;
+
+section .bss ;
+
+a: resd 1 ; Valor de entrada
+key: resd 1 ; key
+counter: resd 1 ; contador
+
+section .rodata ; solo de lectura
+
+prompt: db "Ingresa cualquier numero mayor a cero o ingresa 0 para iniciar y finalizar el programa:", 0xA, 0x0
+error_no_data: db "ERROR: dato no ingresado", 0x0
+print_counter: db "Numero de entradas: %d", 0xA, 0x0
+sorted: db "Lista buscada: ", 0x0
+you_entered: db "Ingresaste: %d", 0xA, 0x0
+terminate: db 0xA, "Programa terminado.", 0xA, 0x0
+array_print: db "%d ", 0x0
+verify_print: db "value at myArray index %d: %d ", 0xA, 0x0
+
+fmt: db "%d", 0x0
+
+section .text ; Codigo ejecutable
+
+main:
+
+.start_loop: ; Primer loop para el acomodo
+  mov edi, prompt
+  mov eax, 0 
+  call printf
+
+  mov rdi, fmt ; El usuario ingreso un numero
+  mov rsi, a
+  mov rax, 0
+  call scanf
+
+  mov edi, you_entered ; Imprime para la verificacion
+  mov esi, [a]
+  mov eax, 0
+  call printf
+
+  mov eax, [a]
+  cmp eax, 0 ; chekea si el usuario ingreso 0
+  je .test_for_data ; hace el salto si el usuario ingreso 0
+
+  mov eax, [counter] ; mueve el valor del contador
+  inc eax ; incrementa en 1 el valor del contador
+  mov ecx, eax
+  dec ecx ; 
+  mov ebx, [a]
+  mov dword[arr + ecx*4], ebx ; guarda el input del array
+  mov [counter], eax ; mueve el valor del contador para el almacenamiento
+
+  mov edi, verify_print
+  mov esi, ecx
+  mov edx, dword[arr + ecx*4]
+  mov eax, 0
+  call printf
+
+  mov edi, print_counter ; Otra impresion para verificacion 
+  mov esi, [counter]
+  mov eax, 0
+  call printf
+
+  mov eax, [counter]
+  cmp eax, 20 ; compara el valor del contador
+  je .test_for_data ; Si se alcanza el maximo, salta a acomodar los datos
+
+  jmp .start_loop ; regresa al loop y sigue hasta alcanzar el maximo 
+
+.test_for_data: ; Revisa que no haya datos antes del 0 ingresado
+  mov eax, [counter]
+  cmp eax, 0 ; compara el valor del contador
+  je .no_data ; si es 0 hace el salto 
+  jmp .sort_setup ; sino es 0 hace el otro salto
+
+.no_data: ; si se ingresa 0 antes de los datos
+  mov edi, error_no_data
+  mov eax, 0
+  call printf
+  jmp .continue
+
+.sort_setup: ; 
+  mov ecx, 1 ; j = 1 insertion sort loop index
+
+.sort_for: ; Comienza el loop para el algoritmo de insercion 
+  cmp ecx, [counter] ; check for j < length end loop when = to array length
+  je .sorted ; end of loop jump to printing
+  mov ebx, dword[arr + ecx*4] ; array[j]
+  mov [key], ebx ; key = array[j]
+  mov eax, ecx ; esi = i
+  dec eax ; i = j - 1
+
+
+.sort_while: ; Mientras se mantenga en los valores, el contador manda a este loop para acomodar
+  cmp eax, 0 ;
+  jnge .sort_next ; if i < 0 jump to end of for loop
+  mov esi, dword[arr + eax*4] ; array[i]
+  cmp esi, [key]
+  jng .sort_next ; if key >= array[i] jump to end of for loop
+  mov dword[arr + eax*4 + 4], esi ; array[i+1] = array[i]
+  dec eax ; i = i - 1
+  jmp .sort_while ; jump back to loop conditional
+
+.sort_next:
+  mov ebx, [key]
+  mov dword[arr + eax*4 + 4], ebx ; array[i+1] = key
+  inc ecx ; j++
+  jmp .sort_for 
+
+.sorted:
+  mov edi, sorted ; Imprime mensaje de acomodado
+  mov eax, 0
+  call printf
+
+  mov ebx, 0 ; 
+
+.print_loop: ; Loop de imprimido de la lista acomodada
+
+  mov edi, array_print
+  mov esi, dword[arr + ebx*4]
+  mov eax, 0
+  call printf
+
+  inc ebx
+  cmp ebx, [counter]
+  je .continue ; si ebx = counter salta al final
+  jmp .print_loop ; sino, sigue imprimiendo
+
+.continue:
+  mov edi, terminate 
+  mov eax, 0
+  call printf
+  ret
